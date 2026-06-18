@@ -8,7 +8,7 @@ const extension = {
 registerExtension(extension);
 
 // 加载 Discord 数据（请替换成你的 Worker 真实地址）
-const WORKER_BASE_URL = 'https://你的Worker地址';
+const WORKER_BASE_URL = 'https://noisy-poetry-480d.blumenkatze0108-b18.workers.dev/';
 
 async function fetchTheaterData(channelType = 'theater_1') {
     try {

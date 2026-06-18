@@ -1,20 +1,13 @@
-import { registerExtension } from '../../extensions.js';
-
 const MODULE_NAME = 'discord_theater';
 const WORKER_URL = 'https://noisy-poetry-480d.blumenkatze0108-b18.workers.dev/'; 
 let currentChannel = 'theater_1';
+let isFetching = false;
 
-async function init() {
-    console.log("[Discord Theater] 正在注入到扩展程序设置面板...");
-    injectUI();
-    await loadTheaterList();
-}
-
+// 声明注入 UI 的核心逻辑
 function injectUI() {
-    // 1. 如果已经存在旧面板，先移除防止重复注入
-    $('#discord-theater-drawer').remove();
+    // 防重复注入保护
+    if ($('#discord-theater-drawer').length) return;
 
-    // 2. 完美的酒馆原生折叠菜单（inline-drawer）结构，确保和“酒馆助手”视觉完全一致
     const html = `
         <div id="discord-theater-drawer" class="inline-drawer">
             <div id="discord-theater-toggle" class="inline-drawer-toggle inline-drawer-header" style="cursor:pointer;">
@@ -33,29 +26,33 @@ function injectUI() {
         </div>
     `;
 
-    // 3. 精准注入到你截图2所看的“扩展程序”设置列表中
+    // 强行塞入酒馆设置面板
     $('#extensions_settings').append(html);
 
-    // 4. 手动绑定折叠菜单的展开与收起，确保手机端触控绝对可用
-    $('#discord-theater-toggle').off('click').on('click', function() {
+    // 绑定手势触控展开事件
+    $('#discord-theater-toggle').on('click', function() {
         $('#discord-theater-content').slideToggle(150);
         $(this).find('.inline-drawer-icon').toggleClass('fa-chevron-down fa-chevron-up');
     });
 
-    // 5. 触控切换标签页逻辑
-    $('.theater-tabs button').off('click').on('click', async function(e) {
-        e.stopPropagation(); // 阻止事件冒泡，防止点击按钮时把菜单折叠起来
+    // 绑定标签切换事件
+    $('.theater-tabs button').on('click', async function(e) {
+        e.stopPropagation();
         $('.theater-tabs button').removeClass('active');
         $(this).addClass('active');
         currentChannel = $(this).data('channel');
         await loadTheaterList();
     });
+
+    // 注入后立刻触发一次数据加载
+    loadTheaterList();
 }
 
 async function loadTheaterList() {
     const listContainer = $('#theater-list');
-    if (!listContainer.length) return;
+    if (!listContainer.length || isFetching) return;
     
+    isFetching = true;
     listContainer.html('<p style="font-size:0.9em; color:var(--grey-50);">正在加载最新内容...</p>');
 
     try {
@@ -71,7 +68,7 @@ async function loadTheaterList() {
                 const previewTitle = item.content.substring(0, 35) + (item.content.length > 35 ? '...' : '');
                 
                 const cardHtml = `
-                    <div class="theater-card" style="background:var(--black-70); border:1px solid var(--grey-30); padding:10px; border-radius:6px; cursor:pointer; transition:0.2s; margin-bottom:5px;">
+                    <div class="theater-card" style="background:var(--black-70); border:1px solid var(--grey-30); padding:10px; border-radius:6px; cursor:pointer; margin-bottom:5px;">
                         <div style="font-size:0.8em; color:var(--grey-50); margin-bottom:3px;">👤 ${item.author}</div>
                         <div style="font-size:0.95em; color:var(--text-color); font-weight:bold;">${previewTitle}</div>
                         <div class="full-content" style="display:none; margin-top:8px; border-top:1px dashed #444; padding-top:8px; white-space:pre-wrap; font-size:0.9em; color:#ddd; line-height:1.4;">${item.content}</div>
@@ -81,14 +78,12 @@ async function loadTheaterList() {
                 listContainer.append(cardHtml);
             });
 
-            // 卡片点击展开逻辑
             $('.theater-card').off('click').on('click', function(e) {
                 if ($(e.target).hasClass('use-theater-btn')) return;
                 $(this).find('.full-content').slideToggle(150);
                 $(this).find('.use-theater-btn').toggle();
             });
 
-            // 一键导入到酒馆输入框
             $('.use-theater-btn').off('click').on('click', function() {
                 const fullContent = $(this).siblings('.full-content').text();
                 const sendTextArea = $('#send_textarea');
@@ -97,8 +92,6 @@ async function loadTheaterList() {
                     sendTextArea.val(fullContent);
                     sendTextArea.trigger('input'); 
                     toastr.success('已成功将小剧场导入输入框！');
-                } else {
-                    toastr.error('未检测到酒馆输入框');
                 }
             });
 
@@ -107,11 +100,29 @@ async function loadTheaterList() {
         }
     } catch (error) {
         listContainer.html('<p style="color:var(--text-error); font-size:0.9em;">同步失败，请稍后再试。</p>');
+    } {
+        isFetching = false;
     }
 }
 
-// 极其关键：直接注册，绝不延迟
-registerExtension({
-    name: MODULE_NAME,
-    render: init
-});
+// 👁️ 核心降维打击：用动态错误隔离+高频轮询定时器，无视酒馆的一切擦除和生命周期机制
+(async () => {
+    try {
+        const { registerExtension } = await import('../../extensions.js');
+        registerExtension({ name: MODULE_NAME, render: () => {} });
+    } catch (e) {
+        try {
+            const { registerExtension } = await import('/scripts/extensions.js');
+            registerExtension({ name: MODULE_NAME, render: () => {} });
+        } catch (err) {
+            console.log("[Discord Theater] 独立注入模式启动");
+        }
+    }
+
+    // 开启高频监控：每 1 秒检查一次，只要发现菜单被酒馆偷偷清空了，瞬间重新粘上去！
+    setInterval(() => {
+        if ($('#extensions_settings').length && !$('#discord-theater-drawer').length) {
+            injectUI();
+        }
+    }, 1000);
+})();

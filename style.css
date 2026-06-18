@@ -1,3 +1,8 @@
-.theater-card:hover { border-color: var(--gold) !important; background: var(--black-60) !important; }
-.theater-tabs button.active { background: var(--blue-50) !important; color: #fff !important; }
-
+.theater-card:hover {
+    border-color: var(--gold) !important;
+    background: var(--black-60) !important;
+}
+.theater-tabs button.active {
+    background: var(--blue-50) !important;
+    color: #fff !important;
+}

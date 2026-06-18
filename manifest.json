@@ -1,8 +1,8 @@
 {
-    "name": "discord_theater",
+    "name": "discord-theater-box",
     "display_name": "🎭 Discord 社区小剧场",
-    "description": "实时同步 Discord 频道的小剧场内容并一键导入输入框",
+    "description": "实时同步 Discord 频道的小剧场内容",
     "author": "Community",
     "version": "1.2.0",
-    "js": "index.js"
+    "entry_point": "index.js"
 }

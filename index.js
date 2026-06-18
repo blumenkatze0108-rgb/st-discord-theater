@@ -94,4 +94,8 @@ async function loadTheaterList() {
     }
 }
 
-jQuery(() => { registerExtension({ name: MODULE_NAME, render: init }); });
+// 🟢 改成这样，让酒馆第一时间抓到它：
+registerExtension({
+    name: MODULE_NAME,
+    render: init
+});

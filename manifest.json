@@ -1,8 +1,0 @@
-{
-    "name": "discord-theater-box",
-    "display_name": "🎭 Discord 社区小剧场",
-    "script": "index.js",
-    "style": "style.css",
-    "author": "Community",
-    "version": "1.2.0"
-}
